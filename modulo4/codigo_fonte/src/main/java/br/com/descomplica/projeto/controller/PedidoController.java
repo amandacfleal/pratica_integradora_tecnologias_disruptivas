@@ -20,46 +20,48 @@ import br.com.descomplica.projeto.service.PedidoService;
 @RestController
 @RequestMapping("/pedido")
 public class PedidoController {
-	@Autowired
-	PedidoService pedidoService;
-	
-	@GetMapping
-	public ResponseEntity<List<Pedido>> getAll(){
-		List<Pedido> pedidos = pedidoService.getAll();
-		if(!pedidos.isEmpty())
-			return new ResponseEntity<>(pedidos, HttpStatus.OK);
-		else 
-			return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-	}
-	
-	@GetMapping("/{id}")
-	public ResponseEntity<Pedido> getById(@PathVariable Integer id) {
-		Pedido pedido = pedidoService.getById(id);
-		if(pedido != null)
-			return new ResponseEntity<>(pedido, HttpStatus.OK); 
-		else 
-			return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);		
-	}
-	
-	@PostMapping
-	public ResponseEntity<Pedido> savePedido(@RequestBody Pedido pedido) {
-		return new ResponseEntity<>(pedidoService.savePedido(pedido), HttpStatus.CREATED);
-	}
-	
-	@PutMapping("/{id}")
-	public ResponseEntity<Pedido> updatePedido(@PathVariable Integer id, @RequestBody Pedido pedido) {
-		Pedido pedidoAtualizada = pedidoService.updatePedido(id, pedido);
-		if(pedidoAtualizada != null)
-			return new ResponseEntity<>(pedidoAtualizada, HttpStatus.OK); 
-		else 
-			return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-	}
+    
+    @Autowired
+    private PedidoService pedidoService;
+    
+    // Método para criar uma resposta OK
+    private <T> ResponseEntity<T> createResponse(T body, HttpStatus status) {
+        return new ResponseEntity<>(body, status);
+    }
 
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Boolean> deletePedido(@PathVariable Integer id) {
-		if(pedidoService.deletePedido(id))
-			return new ResponseEntity<>(true, HttpStatus.OK);
-		else 
-			return new ResponseEntity<>(false, HttpStatus.OK);
-	}
+    // Método para tratar pedidos não encontrados
+    private <T> ResponseEntity<T> createNotFoundResponse() {
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Pedido>> getAll() {
+        List<Pedido> pedidos = pedidoService.getAll();
+        return pedidos.isEmpty() ? createNotFoundResponse() : createResponse(pedidos, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Pedido> getById(@PathVariable Integer id) {
+        return pedidoService.getById(id)
+                .map(pedido -> createResponse(pedido, HttpStatus.OK))
+                .orElseGet(this::createNotFoundResponse);
+    }
+
+    @PostMapping
+    public ResponseEntity<Pedido> savePedido(@RequestBody Pedido pedido) {
+        Pedido savedPedido = pedidoService.savePedido(pedido);
+        return createResponse(savedPedido, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Pedido> updatePedido(@PathVariable Integer id, @RequestBody Pedido pedido) {
+        Pedido updatedPedido = pedidoService.updatePedido(id, pedido);
+        return updatedPedido != null ? createResponse(updatedPedido, HttpStatus.OK) : createNotFoundResponse();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Boolean> deletePedido(@PathVariable Integer id) {
+        boolean deleted = pedidoService.deletePedido(id);
+        return createResponse(deleted, HttpStatus.OK);
+    }
 }
